@@ -1,6 +1,8 @@
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const API_QUERY = new URLSearchParams(location.search).get("api");
+const IS_LOCAL_APP = ["127.0.0.1", "localhost"].includes(location.hostname);
+const LOCAL_APP_URL = "http://127.0.0.1:8787/";
 const DEFAULT_API_BASE = ["127.0.0.1", "localhost"].includes(location.hostname)
   ? ""
   : "http://127.0.0.1:8787";
@@ -882,4 +884,17 @@ async function boot() {
   }
 }
 
-boot();
+if (IS_LOCAL_APP) {
+  boot();
+} else {
+  const gate = $("#launchGate");
+  gate.hidden = false;
+  document.querySelector("main").hidden = true;
+  document.querySelector(".rail").hidden = true;
+  document.querySelector(".topbar").hidden = true;
+  const launchButton = gate.querySelector(".launch-button");
+  launchButton.href = LOCAL_APP_URL;
+  if (new URLSearchParams(location.search).get("launch") === "1") {
+    setTimeout(() => location.replace(LOCAL_APP_URL), 900);
+  }
+}
