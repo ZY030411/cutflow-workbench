@@ -13,6 +13,23 @@
 </head>
 <body>
   <div class="noise"></div>
+  <section class="launch-gate" id="launchGate" hidden>
+    <div class="launch-gate-inner">
+      <span class="brand-mark">序</span>
+      <span class="field-tag">GITHUB PAGES · LOCAL ENGINE</span>
+      <h1>打开本机剪辑工作台</h1>
+      <p>GitHub Pages 只承载这个入口。视频处理、Whisper 字幕和剪映控制都在本机运行，不经过公网隧道。</p>
+      <a class="primary-button launch-button" href="http://127.0.0.1:8787/">
+        <span>打开工作台</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+      </a>
+      <div class="launch-help">
+        <strong>第一次使用或无法打开？</strong>
+        <code>F:\AI漫剧自动剪辑工作台\workbench\start.ps1</code>
+        <span>运行后保持窗口关闭也没关系，本机后端会在后台运行。</span>
+      </div>
+    </div>
+  </section>
 
   <aside class="rail" aria-label="工作台导航">
     <a class="rail-brand" href="#create" aria-label="漫剧切序首页">
@@ -89,7 +106,7 @@
           </div>
           <div class="intro-stats">
             <div><strong>P0–P7</strong><span>完整流水线</span></div>
-            <div><strong>CUDA</strong><span>Whisper 加速</span></div>
+            <div><strong>STABLE</strong><span>Whisper CPU 限线程</span></div>
             <div><strong>LOCAL</strong><span>本地素材处理</span></div>
           </div>
         </header>
