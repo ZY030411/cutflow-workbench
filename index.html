@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f4">
+  <title>漫剧切序 · AI 自动剪辑工作台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23148d75'/%3E%3Cpath d='M18 20h28v9H30v7h13v9H18z' fill='white'/%3E%3C/svg%3E">
+  <script>
+    document.documentElement.dataset.theme = localStorage.getItem("cutflow.theme") || "light";
+  </script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+
+  <aside class="rail" aria-label="工作台导航">
+    <a class="rail-brand" href="#create" aria-label="漫剧切序首页">
+      <span class="brand-mark">序</span>
+      <span class="rail-brand-copy">
+        <strong>漫剧切序</strong>
+        <small>CUTFLOW STUDIO</small>
+      </span>
+    </a>
+
+    <nav class="rail-nav">
+      <button class="rail-item active" type="button" data-view="create">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span><b>新建剪辑</b><small>上传与配置</small></span>
+      </button>
+      <button class="rail-item" type="button" data-view="tasks">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg>
+        <span><b>任务中心</b><small>进度与交付</small></span>
+      </button>
+      <button class="rail-item" type="button" data-view="system">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8"/></svg>
+        <span><b>能力中心</b><small>模型与索引</small></span>
+      </button>
+    </nav>
+
+    <div class="rail-footer">
+      <span class="rail-dot"></span>
+      <span><b>本地引擎</b><small>素材不上传云端</small></span>
+    </div>
+  </aside>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="breadcrumbs">
+        <span>漫剧切序</span>
+        <i>/</i>
+        <strong id="pageTitle">新建剪辑</strong>
+      </div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换白天和夜晚模式" title="切换白天 / 夜晚">
+          <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"/></svg>
+          <span class="theme-toggle-thumb"></span>
+        </button>
+        <div class="system-pill" id="systemPill">
+          <span class="pulse"></span>
+          <span id="systemStatus">正在检测环境</span>
+        </div>
+        <a class="quiet-link" href="http://127.0.0.1:8787/api/docs/smart-bgm-sfx" target="_blank">智能配乐规格</a>
+      </div>
+    </header>
+
+    <nav class="mobile-nav" aria-label="移动端导航">
+      <button class="mobile-nav-item active" type="button" data-mobile-view="create">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>新建</span>
+      </button>
+      <button class="mobile-nav-item" type="button" data-mobile-view="tasks">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg>
+        <span>任务</span>
+      </button>
+      <button class="mobile-nav-item" type="button" data-mobile-view="system">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8"/></svg>
+        <span>能力</span>
+      </button>
+    </nav>
+
+    <main>
+      <section class="app-view active" id="view-create" data-page="create">
+        <header class="page-intro">
+          <div>
+            <h2 data-page-title>从素材到成片，<em>只保留必要的操作</em></h2>
+            <p>上传漫剧素材，自动完成画布适配、语音字幕、节奏分析和原生剪映草稿。每一步都可追踪、可复核。</p>
+          </div>
+          <div class="intro-stats">
+            <div><strong>P0–P7</strong><span>完整流水线</span></div>
+            <div><strong>CUDA</strong><span>Whisper 加速</span></div>
+            <div><strong>LOCAL</strong><span>本地素材处理</span></div>
+          </div>
+        </header>
+
+        <div class="create-layout">
+          <article class="panel create-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="heading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+                <h2>创建新任务</h2>
+              </div>
+              <span class="field-tag">上传与设置</span>
+            </div>
+
+            <form id="jobForm">
+              <label class="dropzone" id="dropzone" for="videoInput">
+                <input id="videoInput" type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" multiple required>
+                <span class="drop-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg>
+                </span>
+                <span class="drop-title">拖入视频，或点击选择文件</span>
+                <span class="drop-note">支持多片段 · MP4 / MOV / MKV / WEBM · 自动识别横竖画布</span>
+                <span class="file-stack" id="fileStack"></span>
+              </label>
+
+              <div class="form-section edit-mode-section">
+                <div class="field-head">
+                  <span>剪辑方式</span>
+                  <span class="field-tag">决定千问导演方案</span>
+                </div>
+                <div class="edit-mode-options">
+                  <label class="edit-mode-card">
+                    <input type="radio" name="editMode" value="rough" checked>
+                    <span class="edit-mode-mark">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h11M4 17h7"/></svg>
+                    </span>
+                    <span><strong>粗剪</strong><small>1 段 BGM，简洁转场，必要动作音效</small></span>
+                  </label>
+                  <label class="edit-mode-card">
+                    <input type="radio" name="editMode" value="fine">
+                    <span class="edit-mode-mark">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M8 12h12M10 18h10M4 18h2"/></svg>
+                    </span>
+                    <span><strong>精剪</strong><small>最多 3 段 BGM，逐段转场、特效、音效与环境音</small></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="field-head">
+                  <label for="subtitleMode">字幕生成方式</label>
+                  <button type="button" class="text-button" id="modeHelp">选择说明</button>
+                </div>
+                <div class="select-wrap">
+                  <select id="subtitleMode" name="subtitle_mode">
+                    <option value="whisper">Whisper 自动识别 + 智能拆句</option>
+                    <option value="script">文本稿 + 强制对齐</option>
+                    <option value="native">剪映原生识别（实验性）</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>
+                </div>
+                <p class="field-hint" id="modeHint">使用词级时间戳自动识别，默认跨平台链路。</p>
+              </div>
+
+              <div class="form-section transcript-section" id="transcriptSection" hidden>
+                <div class="field-head">
+                  <label for="transcript">台词文本稿</label>
+                  <span class="field-tag">已确定台词时最稳</span>
+                </div>
+                <textarea id="transcript" rows="6" placeholder="粘贴逐字台词。标点会参与自动拆句。"></textarea>
+                <p class="field-hint">安装 Whisper 后执行强制对齐；缺少模型时使用能量区间估算并标记复核。</p>
+              </div>
+
+              <div class="form-section">
+                <div class="field-head">
+                  <span>音频与画面增强</span>
+                  <span class="field-tag">可独立关闭</span>
+                </div>
+                <div class="toggle-grid">
+                  <label class="toggle"><input type="checkbox" name="match_music" checked><span></span>情绪音乐</label>
+                  <label class="toggle"><input type="checkbox" name="match_transitions" checked><span></span>场景转场</label>
+                  <label class="toggle"><input type="checkbox" name="match_effects" checked><span></span>峰值特效</label>
+                  <label class="toggle"><input type="checkbox" name="match_sound_effects" checked><span></span>动作音效</label>
+                </div>
+                <div class="feature-switch">
+                  <span class="feature-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.4 5.6L19 10l-5.6 1.4L12 17l-1.4-5.6L5 10l5.6-1.4z"/></svg>
+                  </span>
+                  <span>
+                    <strong>Qwen-Omni 画面导演</strong>
+                    <small id="smartAudioHint">读取文档规则，按画面情绪匹配 BGM 与动作音效</small>
+                  </span>
+                  <span class="status-chip warn" id="smartAudioState">待配置</span>
+                </div>
+              </div>
+
+              <details class="advanced">
+                <summary>
+                  <span>剪映与实验选项</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>
+                </summary>
+                <div class="advanced-body">
+                  <label class="switch-row">
+                    <span><strong>发布到剪映草稿库</strong><small>使用唯一名称，不覆盖已有草稿</small></span>
+                    <input type="checkbox" id="publishJianying" checked>
+                  </label>
+                  <label class="switch-row">
+                    <span><strong>任务完成后启动剪映</strong><small>OCR 定位新草稿并执行音频落轨</small></span>
+                    <input type="checkbox" id="launchJianying" checked>
+                  </label>
+                  <label class="switch-row">
+                    <span><strong>尝试自动导出</strong><small>只有版本导出桥接通过探测时才执行</small></span>
+                    <input type="checkbox" id="autoExport" checked>
+                  </label>
+                  <label class="switch-row danger-option">
+                    <span><strong>实验性素材写入</strong><small>仅开发联调使用，正式交付不建议开启</small></span>
+                    <input type="checkbox" id="allowUnverified">
+                  </label>
+                  <label class="input-row">
+                    <span>Whisper 模型</span>
+                    <input type="text" id="whisperModel" value="large-v3">
+                  </label>
+                </div>
+              </details>
+
+              <button class="primary-button" id="submitButton" type="submit">
+                <span>开始自动剪辑</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+              </button>
+              <p class="submit-note">原始素材不会被覆盖，中间文件和交付物保存在任务专属目录。</p>
+            </form>
+          </article>
+
+          <aside class="create-side">
+            <article class="guide-card">
+              <div class="guide-heading">
+                <h2>四步完成一条漫剧</h2>
+                <p>从素材整理到最终交付，每一步都有对应结果。</p>
+              </div>
+              <ol class="workflow-list">
+                <li><span class="workflow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM9 9h6M9 13h4"/></svg></span><div><b>素材归一</b><p>统一横竖画布、帧率和音频响度。</p></div></li>
+                <li><span class="workflow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h8M6 9h12M4 13h8m4 0h4M9 17h6"/></svg></span><div><b>内容理解</b><p>生成字幕，分析场景切点、情绪与动作。</p></div></li>
+                <li><span class="workflow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-3-3h3m10 1a3 3 0 1 1-3-3h3"/></svg></span><div><b>智能配乐</b><p>检索剪映音乐库，写入 BGM、音效与环境音。</p></div></li>
+                <li><span class="workflow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span><div><b>草稿与质检</b><p>构建原生草稿，执行双层完整性门禁。</p></div></li>
+              </ol>
+            </article>
+
+            <article class="smart-card">
+              <h3>画面会说话，<br>声音应该跟着画面走。</h3>
+              <p>Qwen-Omni 识别情绪、动作与时间点，再通过剪映本机音乐库检索并写入对应音频轨。</p>
+              <div class="smart-tags"><span>情绪 BGM</span><span>动作音效</span><span>人声闪避</span></div>
+              <a href="#system" data-view-link="system">查看配置状态 →</a>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section class="app-view" id="view-tasks" data-page="tasks" hidden>
+        <header class="page-intro compact">
+          <div>
+            <h2 data-page-title>任务中心</h2>
+            <p>每次剪辑独立保存。选择任务查看进度、素材、草稿与交付报告。</p>
+          </div>
+          <div class="intro-stats task-stats">
+            <div><strong id="taskTotal">0</strong><span>全部任务</span></div>
+            <div><strong id="taskRunning">0</strong><span>运行中</span></div>
+            <div><strong id="taskDelivered">0</strong><span>已交付</span></div>
+          </div>
+        </header>
+
+        <div class="task-layout">
+          <aside class="panel task-list-panel">
+            <div class="task-list-head">
+              <div><span class="heading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg></span><h2>任务记录</h2></div>
+              <button class="icon-button" id="refreshJobs" type="button" title="刷新任务">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 5v6h-6"/></svg>
+              </button>
+            </div>
+            <div class="history-list" id="historyGrid">
+              <div class="history-empty">还没有剪辑任务。</div>
+            </div>
+          </aside>
+
+          <section class="panel run-panel" id="runPanel">
+            <div class="run-empty" id="runEmpty">
+              <div class="empty-orbit"><span></span><span></span><span></span><b>待机</b></div>
+              <h2>选择一个任务</h2>
+              <p>从左侧任务记录进入，查看实时阶段、交付物与素材管理。</p>
+            </div>
+
+            <div class="run-content" id="runContent" hidden>
+              <div class="run-head">
+                <div><h2 id="jobTitle">自动剪辑任务</h2></div>
+                <span class="job-state" id="jobState">排队中</span>
+              </div>
+
+              <div class="progress-block">
+                <div class="progress-ring" id="progressRing">
+                  <svg viewBox="0 0 88 88" aria-hidden="true">
+                    <circle class="progress-track" cx="44" cy="44" r="38"></circle>
+                    <circle class="progress-arc" id="progressArc" cx="44" cy="44" r="38" pathLength="100"></circle>
+                  </svg>
+                  <div><strong id="progressValue">0</strong><span>%</span></div>
+                </div>
+                <div class="progress-copy">
+                  <span class="data-label" id="currentStage">PENDING</span>
+                  <h3 id="currentMessage">任务已创建</h3>
+                  <p id="jobMeta">等待环境预检</p>
+                </div>
+              </div>
+
+              <ol class="timeline" id="timeline"></ol>
+              <div class="warning-box" id="warningBox" hidden></div>
+
+              <div class="job-actions" id="jobActions" hidden>
+                <button type="button" class="secondary-button" id="openDraftButton">启动剪映</button>
+                <button type="button" class="secondary-button" id="resumeButton">断点续跑</button>
+                <button type="button" class="danger-button" id="deleteJobButton">删除任务</button>
+              </div>
+
+              <section class="material-section" id="materialSection" hidden>
+                <div class="field-head">
+                  <h3>上传素材</h3>
+                  <span class="field-tag" id="materialCount"></span>
+                </div>
+                <div class="material-list" id="materialList"></div>
+                <p class="field-hint">删除素材后，该任务无法再从原始素材续跑；已生成产物不受影响。</p>
+              </section>
+
+              <div class="manual-export" id="manualExport" hidden>
+                <h3>导出门禁：请在剪映中完成导出</h3>
+                <p id="manualHint">草稿已发布，手动导出 MP4 后在此回传。</p>
+                <form id="manualForm">
+                  <label class="manual-file" for="manualVideo">
+                    <input id="manualVideo" type="file" accept="video/mp4,video/quicktime" required>
+                    <span id="manualFileName">选择剪映导出的成片</span>
+                  </label>
+                  <button class="primary-button compact" type="submit">载入成片并自检</button>
+                </form>
+              </div>
+
+              <section class="artifacts" id="artifactSection" hidden>
+                <div class="field-head"><h3>交付与技术产物</h3><span class="field-tag" id="artifactCount">0 files</span></div>
+                <div class="artifact-list" id="artifactList"></div>
+              </section>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="app-view" id="view-system" data-page="system" hidden>
+        <header class="page-intro compact">
+          <div>
+            <h2 data-page-title>能力中心</h2>
+            <p>检查本地软件、模型、索引和第三方服务配置。所有能力失败都会降级并留下警告。</p>
+          </div>
+          <span class="version-tag" id="buildVersion">LOCAL BUILD · 1.3</span>
+        </header>
+
+        <div class="capability-layout">
+          <div class="capability-main">
+            <section class="system-section">
+              <div class="section-title-row">
+                <div><span class="heading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8"/></svg></span><h2>运行环境</h2></div>
+                <span class="field-tag">启动前检测</span>
+              </div>
+              <div class="system-grid" id="systemGrid">
+                <div class="system-card loading">正在读取环境...</div>
+              </div>
+            </section>
+
+            <section class="smart-audio-section">
+              <div class="section-title-row">
+                <div><span class="heading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-3-3h3m10 1a3 3 0 1 1-3-3h3"/></svg></span><h2>智能配乐能力</h2></div>
+                <a class="text-button" href="http://127.0.0.1:8787/api/docs/smart-bgm-sfx" target="_blank">查看完整规格</a>
+              </div>
+              <div class="smart-feature-grid" id="smartFeatureGrid">
+                <div class="smart-feature skeleton"></div>
+              </div>
+              <div class="capability-note">
+                <div class="note-icon">i</div>
+                <div>
+                  <strong>关于 experimental</strong>
+                  <p>表示草稿能够生成并通过结构自检，但尚未在剪映 11.6.0.14552 上完成“实际打开、逐项预览、成功导出”三项人工验收。它不影响继续制作，但在完成验收前不会标记为正式兼容。</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="policy-grid">
+              <article>
+                <h3>音效受控写入</h3>
+                <p>单条 0.3–0.5 音量，整片最多 15 条音效；同名且 1 秒内重复只保留第一条。</p>
+              </article>
+              <article>
+                <h3>失败不阻断出片</h3>
+                <p>画面理解或素材索引不可用时只写 warning，已有字幕与视频流水线继续执行。</p>
+              </article>
+            </section>
+          </div>
+
+          <aside class="provider-panel">
+            <div class="provider-heading">
+              <div>
+                <span class="heading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2m4 0h10M8 4v6M6 14v6M18 4v6"/></svg></span>
+                <h2>千问模型配置</h2>
+              </div>
+              <span class="status-chip warn" id="qwenConfigState">待配置</span>
+            </div>
+            <p class="provider-intro">在这里填写并保存，当前服务立即生效。密钥写入 Windows 用户环境变量，不写入前端源码或任务记录。</p>
+
+            <form id="smartSettingsForm" autocomplete="off">
+              <label class="setting-field">
+                <span>DashScope API Key</span>
+                <div class="secret-input">
+                  <input type="password" id="dashscopeKey" placeholder="输入新 Key；留空则保留已保存值">
+                  <button type="button" class="reveal-secret" data-target="dashscopeKey">显示</button>
+                </div>
+                <small id="dashscopeSaved">尚未保存</small>
+              </label>
+              <label class="setting-field">
+                <span>Qwen 模型</span>
+                <input type="text" id="qwenModelInput" value="qwen3.8-omni-flash" placeholder="qwen3.8-omni-flash">
+                <small>可替换为你账号可用的 Qwen-Omni 模型名</small>
+              </label>
+              <label class="setting-field">
+                <span>DashScope Base URL</span>
+                <input type="url" id="dashscopeBaseUrl" value="https://dashscope.aliyuncs.com/compatible-mode/v1">
+              </label>
+              <div class="provider-actions">
+                <button class="primary-button compact" type="submit"><span>保存配置</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+                <button class="secondary-button" type="button" id="testQwenButton">测试连接</button>
+                <button class="secondary-button danger-text" type="button" id="clearSmartKeys">清除</button>
+              </div>
+              <p class="config-feedback" id="configFeedback">保存后无需修改源码。</p>
+            </form>
+
+            <div class="provider-divider"></div>
+            <div class="index-summary" id="indexSummary">
+              <div><span>音乐索引</span><strong>—</strong></div>
+              <div><span>音效索引</span><strong>—</strong></div>
+              <div><span>白名单</span><strong>—</strong></div>
+            </div>
+            <div class="access-block">
+              <span>固定访问入口</span>
+              <a id="hostAccessUrl" href="http://127.0.0.1:8787/" target="_blank">正在获取地址…</a>
+              <p id="accessScope">同一局域网内的电脑可以通过主机名或局域网 IP 访问。</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>漫剧切序 · Local-first production console</span>
+      <span>Windows 优先 / macOS 半自动导出</span>
+    </footer>
+  </div>
+
+  <dialog class="confirm-dialog" id="confirmDialog">
+    <form method="dialog">
+      <div class="dialog-icon">!</div>
+      <h3 id="confirmTitle">确认操作</h3>
+      <p id="confirmMessage"></p>
+      <div class="dialog-actions">
+        <button class="secondary-button" value="cancel">取消</button>
+        <button class="danger-button" id="confirmAccept" value="confirm">确认删除</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
