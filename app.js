@@ -384,15 +384,18 @@ function renderWarnings(job) {
 
 function renderActions(job) {
   const actions = $("#jobActions");
+  const analysisButton = $("#analysisButton");
   const openButton = $("#openDraftButton");
   const resumeButton = $("#resumeButton");
   const deleteButton = $("#deleteJobButton");
   const running = ["QUEUED", "RUNNING"].includes(job.state);
   const hasDraft = (job.artifacts || []).some((item) => item.path.includes("draft_build.json"));
+  const hasAnalysis = Number(job.progress || 0) >= 51;
+  analysisButton.hidden = !hasAnalysis;
   openButton.hidden = !hasDraft;
   resumeButton.hidden = !["FAILED", "INTERRUPTED"].includes(job.state);
   deleteButton.hidden = running;
-  actions.hidden = openButton.hidden && resumeButton.hidden && deleteButton.hidden;
+  actions.hidden = analysisButton.hidden && openButton.hidden && resumeButton.hidden && deleteButton.hidden;
 }
 
 function renderManualExport(job) {
@@ -429,6 +432,131 @@ function renderArtifacts(artifacts) {
 function artifactPriority(item) {
   const priorities = { "成片 MP4": 10, "交付自检报告": 9, "可编辑草稿包.zip": 8, "10/50/90% 抽帧复核": 7 };
   return priorities[item.name] || 1;
+}
+
+function analysisTime(value) {
+  const seconds = Math.max(0, Number(value) || 0);
+  const minutes = Math.floor(seconds / 60);
+  const rest = (seconds % 60).toFixed(1).padStart(4, "0");
+  return `${String(minutes).padStart(2, "0")}:${rest}`;
+}
+
+function cueSummary(cues) {
+  if (!Array.isArray(cues) || !cues.length) return "—";
+  return cues
+    .map((cue) => {
+      const name = cue.name || cue.query || cue.intent || "未命名";
+      const end = cue.end ?? (
+        Number(cue.abs_start ?? cue.start ?? cue.at ?? 0) + Number(cue.duration || 0)
+      );
+      return `${name} · ${analysisTime(cue.abs_start ?? cue.start ?? cue.at ?? 0)}–${analysisTime(end)}`;
+    })
+    .join(" / ");
+}
+
+function renderAnalysis(data) {
+  const body = $("#analysisBody");
+  const segments = Array.isArray(data.segments) ? data.segments : [];
+  const music = Array.isArray(data.music) ? data.music : [];
+  const sfx = Array.isArray(data.sfx) ? data.sfx : [];
+  const ambient = Array.isArray(data.ambient) ? data.ambient : [];
+  const transitions = Array.isArray(data.transitions) ? data.transitions : [];
+  const effects = Array.isArray(data.effects) ? data.effects : [];
+  const duration = Math.max(
+    0.1,
+    ...segments.map((item) => Number(item.end) || 0),
+    ...music.map((item) => Number(item.end) || 0),
+    ...ambient.map((item) => Number(item.end) || 0)
+  );
+  $("#analysisSubtitle").textContent =
+    `${data.source || "本地规则"} · ${data.model || "未配置模型"} · ${data.edit_mode === "fine" ? "精剪" : "粗剪"}`;
+  $("#analysisRawLink").href = apiUrl(`/api/jobs/${encodeURIComponent(data.job_id)}/analysis`);
+
+  if (!data.available || !segments.length) {
+    body.innerHTML = `
+      <div class="analysis-empty">
+        <strong>模型分析尚未生成</strong>
+        <p>任务完成 P3/P4 后，这里会显示画面节点、情绪与素材时间安排。</p>
+      </div>`;
+    return;
+  }
+
+  const track = (name, cues, className) => `
+    <div class="analysis-track">
+      <span>${escapeHtml(name)}</span>
+      <div>
+        ${cues.map((cue) => {
+          const start = Number(cue.start ?? cue.abs_start ?? cue.at ?? 0);
+          const endValue = cue.end ?? (start + Number(cue.duration || 0.5));
+          const end = Math.max(start + 0.1, Number(endValue) || start + 0.1);
+          const left = Math.max(0, Math.min(100, (start / duration) * 100));
+          const width = Math.max(0.8, Math.min(100 - left, ((end - start) / duration) * 100));
+          return `<i class="${className}" style="left:${left}%;width:${width}%" title="${escapeHtml(cue.name || cue.query || "")} · ${analysisTime(start)}–${analysisTime(end)}"></i>`;
+        }).join("")}
+      </div>
+    </div>`;
+
+  const segmentRows = segments.map((segment) => {
+    const bgm = cueSummary(segment.bgm);
+    const editCues = [...(segment.transitions || []), ...(segment.effects || [])];
+    const soundCues = [...(segment.sfx || []), ...(segment.ambient || [])];
+    return `
+      <tr>
+        <td class="analysis-time">${analysisTime(segment.start)}<span>${analysisTime(segment.end)}</span></td>
+        <td>
+          <strong>${escapeHtml(segment.scene || segment.id || "画面节点")}</strong>
+          <small>${escapeHtml(segment.action || "未描述动作")}</small>
+        </td>
+        <td><span class="analysis-pill">${escapeHtml(segment.emotion || "日常")}</span><small>${escapeHtml(segment.energy || "medium")}</small></td>
+        <td>${escapeHtml(bgm)}</td>
+        <td>${escapeHtml(cueSummary(editCues))}</td>
+        <td>${escapeHtml(cueSummary(soundCues))}</td>
+      </tr>`;
+  }).join("");
+
+  body.innerHTML = `
+    <section class="analysis-summary">
+      <div><span>整体情绪</span><strong>${escapeHtml(data.overall?.emotion || "日常")}</strong></div>
+      <div><span>画面节点</span><strong>${segments.length}</strong></div>
+      <div><span>BGM 段落</span><strong>${music.length}</strong></div>
+      <div><span>声音落点</span><strong>${sfx.length + ambient.length}</strong></div>
+    </section>
+    <section class="analysis-timeline" aria-label="模型分析时间轴">
+      ${track("BGM", music, "bgm")}
+      ${track("转场", transitions.map((item) => ({...item, duration: 0.5})), "transition")}
+      ${track("特效", effects, "effect")}
+      ${track("音效", sfx, "sfx")}
+      ${track("环境音", ambient, "ambient")}
+      <div class="analysis-scale"><span>00:00</span><span>${analysisTime(duration)}</span></div>
+    </section>
+    <section class="analysis-segments">
+      <div class="field-head"><h3>逐画面节点</h3><span class="field-tag">${segments.length} 段</span></div>
+      <div class="analysis-table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>画面</th><th>情绪</th><th>BGM</th><th>转场 / 特效</th><th>音效 / 环境音</th></tr></thead>
+          <tbody>${segmentRows}</tbody>
+        </table>
+      </div>
+    </section>
+    ${(data.warnings || []).length ? `
+      <section class="analysis-warnings">
+        <strong>分析警告</strong>
+        ${data.warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("")}
+      </section>` : ""}
+  `;
+}
+
+async function openAnalysis() {
+  if (!activeJobId) return;
+  const dialog = $("#analysisDialog");
+  $("#analysisBody").innerHTML = '<div class="analysis-empty"><strong>正在读取模型分析</strong><p>加载画面节点与素材时间安排。</p></div>';
+  dialog.showModal();
+  try {
+    const data = await api(`/api/jobs/${encodeURIComponent(activeJobId)}/analysis`);
+    renderAnalysis(data);
+  } catch (error) {
+    $("#analysisBody").innerHTML = `<div class="analysis-empty"><strong>读取失败</strong><p>${escapeHtml(error.message)}</p></div>`;
+  }
 }
 
 function escapeHtml(value) {
@@ -816,6 +944,11 @@ function bindEvents() {
   $("#smartSettingsForm").addEventListener("submit", saveSmartSettings);
   $("#manualForm").addEventListener("submit", submitManual);
   $("#themeToggle").addEventListener("click", toggleTheme);
+  $("#analysisButton").addEventListener("click", openAnalysis);
+  $("#closeAnalysis").addEventListener("click", () => $("#analysisDialog").close());
+  $("#analysisDialog").addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) event.currentTarget.close();
+  });
   $("#subtitleMode").addEventListener("change", modeChanged);
   $("#openDraftButton").addEventListener("click", openDraft);
   $("#resumeButton").addEventListener("click", resumeJob);
