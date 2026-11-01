@@ -545,6 +545,14 @@ async function loadHealth() {
         detail: "画布、音频、解码与成品门禁",
         status: health.ffmpeg.available && health.ffprobe.available ? "ok" : "bad",
       },
+      {
+        label: "稳定保护",
+        value: `CPU ${health.stability?.cpu_threads || 2} 线程`,
+        detail: health.stability?.ali_paladin_driver_present
+          ? "检测到 AliPaladin 文件筛选驱动；若仍蓝屏请更新或移除冲突驱动"
+          : "Whisper 使用低负载 CPU 模式，后端以低优先级运行",
+        status: health.stability?.ali_paladin_driver_present ? "warn" : "ok",
+      },
     ];
     $("#systemGrid").innerHTML = cards.map((card) => `
       <article class="system-card">
